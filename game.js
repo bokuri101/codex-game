@@ -1,3 +1,13 @@
+// 初始化音效对象
+const soundFlap = new Audio("./flap.mp3");
+const soundScore = new Audio("./score.mp3");
+const soundHit = new Audio("./hit.mp3");
+
+// 封装播放函数（重置当前时间可以防止连续点击时音效卡壳）
+function playSound(audio) {
+  audio.currentTime = 0;
+  audio.play().catch(e => console.log("等待用户交互后播放音效: ", e));
+}
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.querySelector("#score");
@@ -88,6 +98,7 @@ function start() {
 
 function gameOver() {
   state = "over";
+  playSound(soundHit);
   best = Math.max(best, score);
   localStorage.setItem("skyLarkBest", String(best));
   bestEl.textContent = best;
@@ -110,6 +121,7 @@ function flap() {
   }
   bird.vy = -7.6;
   bird.wing = 1;
+  playSound(soundFlap);
   particles.push({
     x: bird.x - 15,
     y: bird.y + 8,
@@ -174,6 +186,7 @@ function update() {
       pipe.scored = true;
       score += 1;
       scoreEl.textContent = score;
+      playSound(soundScore);
       burst(bird.x, bird.y - 12);
     }
   }
