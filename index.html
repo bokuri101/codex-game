@@ -25,6 +25,14 @@
         <p id="message">按空格、点击或触屏开始</p>
         <button id="startButton" type="button">开始</button>
       </div>
+      <div id="quizOverlay" class="overlay hidden">
+        <div id="quizTimer" style="font-size: 36px; font-weight: bold; color: #ff4a4a; background: rgba(0,0,0,0.4); width: 60px; height: 60px; line-height: 60px; margin: 0 auto 10px; border-radius: 50%; border: 3px solid #ff4a4a;">6</div>
+        
+        <h2 id="quizTitle" style="color: #ff7878; margin: 0; font-size: 24px;">- 灵魂拷问 -</h2>
+        <p id="quizQuestion" style="font-size: 18px; color: #fff; margin: 10px 0;">这里显示问题</p>
+        <div id="quizOptions" style="display: grid; gap: 10px; width: 100%;">
+          </div>
+      </div>
     </section>
     <nav class="controls" aria-label="游戏控制">
       <button id="pauseButton" type="button" title="暂停或继续">暂停</button>
