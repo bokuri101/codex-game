@@ -1,4 +1,4 @@
-// ====== 利用 Web Audio API 凭空生成 8-bit 复古游戏音效 ======
+/*// ====== 利用 Web Audio API 凭空生成 8-bit 复古游戏音效 ======
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
@@ -52,7 +52,49 @@ function playSound(type) {
     osc.start(now);
     osc.stop(now + 0.4);
   }
+}*/
+// ====== 音效系统 ======
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  const now = audioCtx.currentTime;
+  if (type === 'flap') {
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now); osc.stop(now + 0.1);
+  } else if (type === 'score') {
+    osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); gain.gain.setValueAtTime(0.2, now);
+    osc.frequency.setValueAtTime(880, now + 0.08); gain.gain.setValueAtTime(0.2, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+    osc.start(now); osc.stop(now + 0.35);
+  } else if (type === 'hit') {
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(40, now + 0.4);
+    gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    osc.start(now); osc.stop(now + 0.4);
+  } else if (type === 'tick') {
+    osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); osc.start(now); osc.stop(now + 0.05);
+  } else if (type === 'win') {
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(392, now); osc.frequency.setValueAtTime(523.25, now + 0.08);
+    osc.frequency.setValueAtTime(659.25, now + 0.16); osc.frequency.setValueAtTime(783.99, now + 0.24);
+    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    osc.start(now); osc.stop(now + 0.5);
+  }
 }
+
+// ====== 答题控制变量 ======
+const quizOverlay = document.querySelector("#quizOverlay");
+const quizQuestion = document.querySelector("#quizQuestion");
+const quizOptions = document.querySelector("#quizOptions");
+const quizTimerEl = document.querySelector("#quizTimer");
+const quizTitleEl = document.querySelector("#quizTitle");
+let quizTimerId = null; 
+let timeLeft = 6;       
+let hasRevived = false;
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.querySelector("#score");
@@ -89,6 +131,7 @@ bestEl.textContent = best;
 
 function reset() {
   bird.y = H * 0.44;
+  hasRevived = false;
   bird.vy = 0;
   bird.wing = 0;
   pipes = [];
@@ -142,15 +185,23 @@ function start() {
 }
 
 function gameOver() {
+  if (!hasRevived) {
+    showQuiz(); // 没复活过，拦截死亡弹出答题
+  } else {
+    triggerRealGameOver(); // 复活过了，彻底死亡
+  }
+}
+
+function triggerRealGameOver() {
   state = "over";
-  playSound('hit');
   best = Math.max(best, score);
   localStorage.setItem("skyLarkBest", String(best));
   bestEl.textContent = best;
-  messageEl.textContent = `得分 ${score}，按空格或点击再飞一次`;
+  messageEl.textContent = `答错或超时啦！最终得分 ${score}，按空格或点击再飞一次`;
   startButton.textContent = "再来一局";
   overlay.classList.remove("hidden");
   burst(bird.x, bird.y);
+  playSound('hit'); 
 }
 
 function flap() {
@@ -474,7 +525,127 @@ window.addEventListener("keydown", (event) => {
   }
   if (event.code === "KeyP") togglePause();
 });
+// ====== 历史题库 ======
+const quizBank = [
+  { q: "中国历史上第一个统一的封建王朝是哪一个？", a: ["夏朝", "商朝", "秦朝", "汉朝"], right: 2 },
+  { q: "“贞观之治”是指中国历史上哪位皇帝在位期间的清明政治？", a: ["唐太宗 李世民", "唐高祖 李渊", "汉武帝 刘彻", "宋太祖 赵胤"], right: 0 },
+  { q: "世界上现存规模最大、保存最完整的古代木结构宫殿建筑群是什么？", a: ["凡尔赛宫", "北京故宫", "托普卡帕宫", "帕特农神庙"], right: 1 },
+  { q: "西方文明的发源地，并诞生了著名希腊神话的是哪个古代国家？", a: ["古埃及", "古巴比伦", "古罗马", "古希腊"], right: 3 },
+  { q: "中国古代著名的“丝绸之路”是在哪个朝代被正式开辟的？", a: ["秦朝", "汉朝", "唐朝", "明朝"], right: 1 },
+  { q: "被誉为“世界古代七大奇迹”之一、位于埃及的宏伟建筑是什么？", a: ["空中花园", "胡夫金字塔", "泰姬陵", "巨石阵"], right: 1 }
+];
 
+// 答对时的彩色烟花效果
+function createFireworks() {
+  for (let i = 0; i < 80; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 6 + 2;
+    particles.push({
+      x: W / 2 + (Math.random() * 60 - 30),
+      y: H / 3 + (Math.random() * 60 - 30),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: Math.random() * 40 + 30,
+      color: `hsl(${Math.random() * 360}, 100%, 70%)`
+    });
+  }
+}
+
+// 弹出答题窗口与6秒倒计时
+function showQuiz() {
+  state = "paused"; 
+  timeLeft = 6; 
+  quizTimerEl.textContent = timeLeft;
+  quizTimerEl.style.color = "#ff4a4a";
+  quizTimerEl.style.borderColor = "#ff4a4a";
+  quizTitleEl.textContent = "- 灵魂拷问 -";
+  quizTitleEl.style.color = "#ff7878";
+  quizTitleEl.className = ""; 
+
+  const randomQuiz = quizBank[Math.floor(Math.random() * quizBank.length)];
+  quizQuestion.textContent = randomQuiz.q;
+  quizOptions.innerHTML = ""; 
+
+  randomQuiz.a.forEach((optionText, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = optionText;
+    btn.style.background = "#ffffff";
+    btn.style.color = "#12263f";
+    btn.style.boxShadow = "0 4px 0 #b1b1b1";
+    
+    btn.addEventListener("click", () => {
+      clearInterval(quizTimerId); 
+      if (index === randomQuiz.right) {
+        handleReviveSuccess(); 
+      } else {
+        handleReviveFail(); 
+      }
+    });
+    quizOptions.appendChild(btn);
+  });
+
+  quizOverlay.classList.remove("hidden"); 
+
+  clearInterval(quizTimerId);
+  quizTimerId = setInterval(() => {
+    timeLeft--;
+    quizTimerEl.textContent = timeLeft;
+    if (timeLeft > 0) {
+      playSound('tick'); 
+    } else {
+      clearInterval(quizTimerId);
+      handleReviveFail();
+    }
+  }, 1000);
+}
+
+// 答对的处理：放烟花，出提示
+function handleReviveSuccess() {
+  playSound('win'); 
+  quizOptions.innerHTML = "";
+  quizTitleEl.textContent = "🎉 答对啦！🎉";
+  quizTitleEl.style.color = "#a1ff78";
+  quizTitleEl.classList.add("pop-effect");
+  quizTimerEl.textContent = "✔";
+  quizTimerEl.style.color = "#a1ff78";
+  quizTimerEl.style.borderColor = "#a1ff78";
+
+  createFireworks();
+
+  setTimeout(() => {
+    quizOverlay.classList.add("hidden");
+    hasRevived = true; 
+    state = "playing";
+    bird.y = Math.max(80, bird.y - 60);
+    bird.vy = -6; 
+    pipes = pipes.filter(p => p.x < bird.x - bird.r || p.x > bird.x + W/2);
+  }, 1500);
+}
+
+function handleReviveFail() {
+  clearInterval(quizTimerId);
+  quizOverlay.classList.add("hidden");
+  triggerRealGameOver();
+}
+
+// 魔改原本的粒子绘制函数以支持彩色烟花渲染
+// 在代码里找到原有的 drawParticles() 函数，用下面这段覆盖它
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / 40);
+    ctx.fillStyle = p.color || "#fff1a0"; // 支持烟花彩色
+    ctx.beginPath();
+    if (p.vx !== undefined) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.1; 
+    }
+    ctx.arc(p.x, p.y, p.vx !== undefined ? 4 : 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    p.life--;
+  }
+  particles = particles.filter(p => p.life > 0);
+  ctx.globalAlpha = 1;
+}
 reset();
 draw();
 requestAnimationFrame(loop);
