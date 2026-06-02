@@ -1,12 +1,57 @@
-// 初始化音效对象
-const soundFlap = new Audio("./flap.mp3");
-const soundScore = new Audio("./score.mp3");
-const soundHit = new Audio("./hit.mp3");
+// ====== 利用 Web Audio API 凭空生成 8-bit 复古游戏音效 ======
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// 封装播放函数（重置当前时间可以防止连续点击时音效卡壳）
-function playSound(audio) {
-  audio.currentTime = 0;
-  audio.play().catch(e => console.log("等待用户交互后播放音效: ", e));
+function playSound(type) {
+  // 确保音频上下文在用户交互后处于激活状态
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+
+  if (type === 'flap') {
+    // 振翅音效：频率在 0.1 秒内快速从 150Hz 升到 400Hz，然后消失
+    osc.type = 'triangle'; // 三角波，声音比较闷，适合翅膀扑腾
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+    
+    gain.gain.setValueAtTime(0.3, now); // 音量
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } 
+  else if (type === 'score') {
+    // 得分音效：经典的马里奥吃金币“叮咚”双音节
+    osc.type = 'sine'; // 正弦波，清脆的水晶音
+    // 第一个音节
+    osc.frequency.setValueAtTime(523.25, now); // C5 音符
+    gain.gain.setValueAtTime(0.2, now);
+    // 第二个音节（0.08秒后变高音）
+    osc.frequency.setValueAtTime(880, now + 0.08); // A5 音符
+    gain.gain.setValueAtTime(0.2, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+    
+    osc.start(now);
+    osc.stop(now + 0.35);
+  } 
+  else if (type === 'hit') {
+    // 撞击死亡音效：频率在 0.4 秒内从 300Hz 坠落到 40Hz 的悲惨下坠音
+    osc.type = 'sawtooth'; // 锯齿波，带有点沙哑和破坏感
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.linearRampToValueAtTime(40, now + 0.4);
+    
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
 }
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
@@ -98,7 +143,7 @@ function start() {
 
 function gameOver() {
   state = "over";
-  playSound(soundHit);
+  playSound('hit');
   best = Math.max(best, score);
   localStorage.setItem("skyLarkBest", String(best));
   bestEl.textContent = best;
@@ -121,7 +166,7 @@ function flap() {
   }
   bird.vy = -7.6;
   bird.wing = 1;
-  playSound(soundFlap);
+  playSound('flap');
   particles.push({
     x: bird.x - 15,
     y: bird.y + 8,
@@ -186,7 +231,7 @@ function update() {
       pipe.scored = true;
       score += 1;
       scoreEl.textContent = score;
-      playSound(soundScore);
+      playSound('score');
       burst(bird.x, bird.y - 12);
     }
   }
