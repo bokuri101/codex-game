@@ -306,7 +306,8 @@ function update() {
 }
 
 function updateParticles() {
-  particles = particles
+/*
+particles = particles
     .map((p) => ({
       ...p,
       x: p.x + p.vx,
@@ -315,6 +316,7 @@ function updateParticles() {
       life: p.life - 1,
     }))
     .filter((p) => p.life > 0);
+    */
 }
 
 function drawBackground() {
@@ -475,6 +477,7 @@ function drawAvatarSprite(x, y, p) {
   px("#e9fbff", -2, 23 + wing, 5, 2);
 }
 
+/*
 function drawParticles() {
   for (const p of particles) {
     ctx.globalAlpha = Math.max(0, p.life / 34);
@@ -485,6 +488,7 @@ function drawParticles() {
   }
   ctx.globalAlpha = 1;
 }
+*/
 
 function drawReadyHint() {
   if (state !== "ready") return;
