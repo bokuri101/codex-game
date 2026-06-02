@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一方飞天记</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell" aria-label="一方飞天记小游戏">
+    <section class="game-panel">
+      <canvas id="game" width="432" height="648" aria-label="游戏画布"></canvas>
+      <div class="hud" aria-hidden="true">
+        <div>
+          <span class="label">分数</span>
+          <strong id="score">0</strong>
+        </div>
+        <div>
+          <span class="label">最佳</span>
+          <strong id="best">0</strong>
+        </div>
+      </div>
+      <div id="overlay" class="overlay">
+        <h1>一方飞天记</h1>
+        <p id="message">按空格、点击或触屏开始</p>
+        <button id="startButton" type="button">开始</button>
+      </div>
+    </section>
+    <nav class="controls" aria-label="游戏控制">
+      <button id="pauseButton" type="button" title="暂停或继续">暂停</button>
+      <button id="restartButton" type="button" title="重新开始">重来</button>
+    </nav>
+  </main>
+  <script src="./game.js"></script>
+</body>
+</html>
